@@ -65,7 +65,7 @@ def add_recipe_ingredient_view(request, recipe_id):
 
 
 def api_products(request):
-    products = Product.objects.all()
+    products = Product.objects.all().order_by('name')
     data = [
         {
             'id': product.id,
@@ -91,6 +91,14 @@ def api_recipes(request):
             'description': recipe.description,
             'author': recipe.author.username,
             'total_calories': recipe.total_calories(),
+            'ingredients': [
+                {
+                    'product': ingredient.product.name,
+                    'grams': ingredient.grams,
+                    'calories': ingredient.calories(),
+                }
+                for ingredient in recipe.ingredients.all()
+            ],
         }
         for recipe in recipes
     ]
