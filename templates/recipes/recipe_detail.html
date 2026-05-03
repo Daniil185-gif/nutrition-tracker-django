@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ recipe.title }}</h1>
+        <p class="text-muted mb-0">Автор: {{ recipe.author.username }}</p>
+    </div>
+    {% if request.user == recipe.author %}
+        <a class="btn btn-dark" href="{% url 'add_recipe_ingredient' recipe.id %}">Добавить ингредиент</a>
+    {% endif %}
+</div>
+
+{% if recipe.description %}
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <p class="mb-0">{{ recipe.description }}</p>
+        </div>
+    </div>
+{% endif %}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Ингредиенты</h2>
+        {% if recipe.ingredients.all %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Продукт</th>
+                            <th>Граммы</th>
+                            <th>Калории</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ingredient in recipe.ingredients.all %}
+                            <tr>
+                                <td>{{ ingredient.product.name }}</td>
+                                <td>{{ ingredient.grams }} г</td>
+                                <td>{{ ingredient.calories|floatformat:0 }} ккал</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="fw-semibold mb-0">Всего: {{ recipe.total_calories|floatformat:0 }} ккал</p>
+        {% else %}
+            <p class="text-muted mb-0">Ингредиенты пока не добавлены.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -25,7 +25,7 @@
                             <span class="nav-link disabled">Дневник</span>
                         </li>
                         <li class="nav-item">
-                            <span class="nav-link disabled">Рецепты</span>
+                            <a class="nav-link" href="{% url 'recipe_list' %}">Рецепты</a>
                         </li>
                         {% if request.user.is_authenticated %}
                             <li class="nav-item">
