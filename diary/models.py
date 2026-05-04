@@ -23,4 +23,31 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-# Create your models here.
+
+class FoodEntry(models.Model):
+    class MealChoices(models.TextChoices):
+        BREAKFAST = 'breakfast', 'Завтрак'
+        LUNCH = 'lunch', 'Обед'
+        DINNER = 'dinner', 'Ужин'
+        SNACK = 'snack', 'Перекус'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='food_entries',
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name='food_entries',
+    )
+    grams = models.DecimalField(max_digits=8, decimal_places=2)
+    meal = models.CharField(max_length=20, choices=MealChoices.choices)
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f'{self.user} — {self.product} ({self.grams} г) — {self.date}'

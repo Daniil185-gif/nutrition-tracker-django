@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить продукт{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 mb-0">Добавить продукт</h1>
+  <a class="btn btn-outline-secondary" href="{% url 'product_list' %}">Назад</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label" for="{{ form.name.id_for_label }}">Название</label>
+          {{ form.name }}
+          {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ form.calories_per_100g.id_for_label }}">ккал / 100г</label>
+          {{ form.calories_per_100g }}
+          {% for e in form.calories_per_100g.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ form.proteins.id_for_label }}">Белки</label>
+          {{ form.proteins }}
+          {% for e in form.proteins.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ form.fats.id_for_label }}">Жиры</label>
+          {{ form.fats }}
+          {% for e in form.fats.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ form.carbs.id_for_label }}">Углеводы</label>
+          {{ form.carbs }}
+          {% for e in form.carbs.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <a class="btn btn-link" href="{% url 'product_list' %}">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

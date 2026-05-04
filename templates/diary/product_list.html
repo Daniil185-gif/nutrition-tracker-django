@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Продукты{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+  <h1 class="h4 mb-0">Продукты</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{% url 'add_product' %}">Добавить продукт</a>
+  </div>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-sm-8 col-md-6">
+    <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Поиск по названию">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary" type="submit">Найти</button>
+    {% if q %}
+      <a class="btn btn-link" href="{% url 'product_list' %}">Сбросить</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th class="text-end">ккал / 100г</th>
+          <th class="text-end">Б</th>
+          <th class="text-end">Ж</th>
+          <th class="text-end">У</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td class="fw-semibold">{{ p.name }}</td>
+            <td class="text-end">{{ p.calories_per_100g }}</td>
+            <td class="text-end">{{ p.proteins }}</td>
+            <td class="text-end">{{ p.fats }}</td>
+            <td class="text-end">{{ p.carbs }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">Ничего не найдено.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
