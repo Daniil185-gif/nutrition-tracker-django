@@ -28,7 +28,10 @@
                     дневник скрыт от других пользователей
                 {% endif %}
             </p>
-            <a class="btn btn-dark" href="{% url 'edit_profile' %}">Редактировать профиль</a>
+            <div class="d-flex gap-2">
+                <a class="btn btn-dark" href="{% url 'edit_profile' %}">Редактировать профиль</a>
+                <a class="btn btn-outline-primary" href="{% url 'diary' %}">Открыть мой дневник</a>
+            </div>
         {% else %}
             {% if is_friend %}
                 <p class="text-success">Вы уже друзья.</p>
@@ -46,10 +49,10 @@
             {% endif %}
 
             {% if can_view_diary_info %}
-                <div class="alert alert-success mb-0">
+                <div class="alert alert-success">
                     Этот пользователь разрешил друзьям видеть дневник.
-                    Сам дневник и статистика будут добавлены в модуле дневника.
                 </div>
+                <a class="btn btn-outline-primary" href="{% url 'friend_diary' profile_user.username %}">Открыть дневник</a>
             {% else %}
                 <div class="alert alert-secondary mb-0">
                     Дневник и статистика сейчас недоступны для просмотра.

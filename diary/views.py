@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import date as date_type
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_date
@@ -11,6 +13,12 @@ from django.utils.timezone import localdate
 
 from .forms import FoodEntryForm, ProductForm
 from .models import FoodEntry, Product
+from users.models import CustomUser
+
+
+CALORIES_PER_PROTEIN_GRAM = Decimal('4')
+CALORIES_PER_FAT_GRAM = Decimal('9')
+CALORIES_PER_CARB_GRAM = Decimal('4')
 
 
 @login_required
@@ -53,28 +61,107 @@ def _get_selected_date(request, date_str: str | None) -> date_type:
     return parsed or localdate()
 
 
-@login_required
-def diary_view(request, date_str: str | None = None):
-    selected_date = _get_selected_date(request, date_str)
+def _calculate_nutrition_norms(user):
+    profile = getattr(user, 'profile', None)
+    calories = Decimal(getattr(profile, 'daily_calorie_goal', 2000) or 2000)
+    weight = getattr(profile, 'weight_kg', None)
+
+    if weight:
+        protein = Decimal(weight) * Decimal('1.60')
+        fats = Decimal(weight) * Decimal('0.80')
+        used_calories = (
+            protein * CALORIES_PER_PROTEIN_GRAM
+            + fats * CALORIES_PER_FAT_GRAM
+        )
+        carbs = max(
+            Decimal('0'),
+            (calories - used_calories) / CALORIES_PER_CARB_GRAM,
+        )
+    else:
+        protein = calories * Decimal('0.20') / CALORIES_PER_PROTEIN_GRAM
+        fats = calories * Decimal('0.30') / CALORIES_PER_FAT_GRAM
+        carbs = calories * Decimal('0.50') / CALORIES_PER_CARB_GRAM
+
+    return {
+        'calories': calories,
+        'proteins': protein,
+        'fats': fats,
+        'carbs': carbs,
+    }
+
+
+def _build_diary_context(owner, selected_date, *, viewer):
     entries = (
         FoodEntry.objects.select_related('product')
-        .filter(user=request.user, date=selected_date)
+        .filter(user=owner, date=selected_date)
         .order_by('meal', 'created_at')
     )
 
-    total_calories = 0
+    totals = {
+        'calories': Decimal('0'),
+        'proteins': Decimal('0'),
+        'fats': Decimal('0'),
+        'carbs': Decimal('0'),
+    }
+
     for entry in entries:
-        entry.calories = (entry.grams * entry.product.calories_per_100g) / 100
-        total_calories += entry.calories
+        ratio = Decimal(entry.grams) / Decimal('100')
+        entry.calories = Decimal(entry.product.calories_per_100g) * ratio
+        entry.proteins = entry.product.proteins * ratio
+        entry.fats = entry.product.fats * ratio
+        entry.carbs = entry.product.carbs * ratio
+
+        totals['calories'] += entry.calories
+        totals['proteins'] += entry.proteins
+        totals['fats'] += entry.fats
+        totals['carbs'] += entry.carbs
+
+    norms = _calculate_nutrition_norms(owner)
+    remaining = {
+        key: norms[key] - totals[key]
+        for key in norms
+    }
+
+    return {
+        'selected_date': selected_date,
+        'entries': entries,
+        'totals': totals,
+        'norms': norms,
+        'remaining': remaining,
+        'diary_owner': owner,
+        'is_own_diary': owner == viewer,
+    }
+
+
+@login_required
+def diary_view(request, date_str: str | None = None):
+    selected_date = _get_selected_date(request, date_str)
 
     return render(
         request,
         'diary/diary.html',
-        {
-            'selected_date': selected_date,
-            'entries': entries,
-            'total_calories': total_calories,
-        },
+        _build_diary_context(request.user, selected_date, viewer=request.user),
+    )
+
+
+@login_required
+def friend_diary_view(request, username, date_str: str | None = None):
+    diary_owner = CustomUser.objects.filter(username=username).select_related('profile').first()
+    if diary_owner is None:
+        return redirect('find_friends')
+    if diary_owner == request.user:
+        return redirect('diary')
+
+    is_friend = request.user.friends.filter(pk=diary_owner.pk).exists()
+    can_view_diary = diary_owner.profile.show_diary_to_friends and is_friend
+    if not can_view_diary:
+        return HttpResponseForbidden('Дневник пользователя недоступен.')
+
+    selected_date = _get_selected_date(request, date_str)
+    return render(
+        request,
+        'diary/diary.html',
+        _build_diary_context(diary_owner, selected_date, viewer=request.user),
     )
 
 
