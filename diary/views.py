@@ -91,11 +91,21 @@ def _calculate_nutrition_norms(user):
 
 
 def _build_diary_context(owner, selected_date, *, viewer):
-    entries = (
+    entries = list(
         FoodEntry.objects.select_related('product')
         .filter(user=owner, date=selected_date)
         .order_by('meal', 'created_at')
     )
+
+    recipe_ids = [e.recipe_object_id for e in entries if not e.product_id and e.recipe_object_id]
+    recipes_by_id = {}
+    if recipe_ids:
+        from recipes.models import Recipe  # noqa: PLC0415
+
+        recipes_by_id = {
+            r.id: r
+            for r in Recipe.objects.filter(id__in=recipe_ids)
+        }
 
     totals = {
         'calories': Decimal('0'),
@@ -105,11 +115,26 @@ def _build_diary_context(owner, selected_date, *, viewer):
     }
 
     for entry in entries:
-        ratio = Decimal(entry.grams) / Decimal('100')
-        entry.calories = Decimal(entry.product.calories_per_100g) * ratio
-        entry.proteins = entry.product.proteins * ratio
-        entry.fats = entry.product.fats * ratio
-        entry.carbs = entry.product.carbs * ratio
+        if entry.product_id:
+            ratio = Decimal(entry.grams) / Decimal('100')
+            entry.calories = Decimal(entry.product.calories_per_100g) * ratio
+            entry.proteins = entry.product.proteins * ratio
+            entry.fats = entry.product.fats * ratio
+            entry.carbs = entry.product.carbs * ratio
+        else:
+            recipe = recipes_by_id.get(entry.recipe_object_id)
+            entry.recipe_title = getattr(recipe, 'title', '—')
+            servings = Decimal(entry.servings or 0)
+            if recipe is not None:
+                entry.calories = Decimal(recipe.total_calories()) * servings
+                entry.proteins = Decimal(recipe.total_proteins()) * servings
+                entry.fats = Decimal(recipe.total_fats()) * servings
+                entry.carbs = Decimal(recipe.total_carbs()) * servings
+            else:
+                entry.calories = Decimal('0')
+                entry.proteins = Decimal('0')
+                entry.fats = Decimal('0')
+                entry.carbs = Decimal('0')
 
         totals['calories'] += entry.calories
         totals['proteins'] += entry.proteins
@@ -168,13 +193,26 @@ def friend_diary_view(request, username, date_str: str | None = None):
 @login_required
 def add_food_entry_view(request):
     if request.method == 'POST':
-        form = FoodEntryForm(request.POST)
+        form = FoodEntryForm(request.POST, user=request.user)
         if form.is_valid():
             entry = form.save(user=request.user)
             messages.success(request, 'Запись добавлена.')
             return redirect(f"{reverse('diary')}?date={entry.date.isoformat()}")
     else:
         initial_date = parse_date(request.GET.get('date') or '') or localdate()
-        form = FoodEntryForm(initial={'date': initial_date})
+        initial = {'date': initial_date}
+        recipe_id = (request.GET.get('recipe') or '').strip()
+        if recipe_id.isdigit():
+            from recipes.models import Recipe  # noqa: PLC0415
+
+            recipe = Recipe.objects.filter(pk=int(recipe_id)).first()
+            if recipe is not None:
+                initial['servings'] = '1.00'
+                form = FoodEntryForm(initial=initial, user=request.user)
+                form.fields['recipe'].initial = recipe
+            else:
+                form = FoodEntryForm(initial=initial, user=request.user)
+        else:
+            form = FoodEntryForm(initial=initial, user=request.user)
 
     return render(request, 'diary/add_food_entry.html', {'form': form})

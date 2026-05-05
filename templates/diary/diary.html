@@ -78,8 +78,9 @@
       <thead>
         <tr>
           <th>Приём</th>
-          <th>Продукт</th>
+          <th>Продукт / рецепт</th>
           <th class="text-end">Граммы</th>
+          <th class="text-end">Порции</th>
           <th class="text-end">ккал</th>
           <th class="text-end">Б</th>
           <th class="text-end">Ж</th>
@@ -90,8 +91,27 @@
         {% for e in entries %}
           <tr>
             <td>{{ e.get_meal_display }}</td>
-            <td class="fw-semibold">{{ e.product.name }}</td>
-            <td class="text-end">{{ e.grams|floatformat:0 }}</td>
+            <td class="fw-semibold">
+              {% if e.product_id %}
+                {{ e.product.name }}
+              {% else %}
+                Рецепт: {{ e.recipe_title }}
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if e.product_id %}
+                {{ e.grams|floatformat:0 }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if e.product_id %}
+                —
+              {% else %}
+                {{ e.servings|floatformat:2 }}
+              {% endif %}
+            </td>
             <td class="text-end">{{ e.calories|floatformat:0 }}</td>
             <td class="text-end">{{ e.proteins|floatformat:1 }}</td>
             <td class="text-end">{{ e.fats|floatformat:1 }}</td>
@@ -99,7 +119,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">Пока нет записей за этот день.</td>
+            <td colspan="8" class="text-center text-muted py-4">Пока нет записей за этот день.</td>
           </tr>
         {% endfor %}
       </tbody>

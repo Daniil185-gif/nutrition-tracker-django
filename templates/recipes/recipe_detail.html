@@ -8,13 +8,14 @@
         <h1 class="h3 mb-1">{{ recipe.title }}</h1>
         <p class="text-muted mb-0">Автор: {{ recipe.author.username }}</p>
     </div>
-    {% if request.user == recipe.author %}
-        <div class="d-flex gap-2">
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" href="{% url 'add_food_entry' %}?recipe={{ recipe.id }}">Добавить в дневник</a>
+        {% if request.user == recipe.author %}
             <a class="btn btn-outline-dark" href="{% url 'edit_recipe' recipe.id %}">Редактировать</a>
             <a class="btn btn-dark" href="{% url 'add_recipe_ingredient' recipe.id %}">Добавить ингредиент</a>
             <a class="btn btn-outline-danger" href="{% url 'delete_recipe' recipe.id %}">Удалить рецепт</a>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <div class="row g-3 mb-3">

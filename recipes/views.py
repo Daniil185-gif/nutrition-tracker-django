@@ -19,6 +19,37 @@ def _can_view_recipe(user, recipe):
     return recipe.author_id == user.id or user.friends.filter(pk=recipe.author_id).exists()
 
 
+def _serialize_recipe(recipe: Recipe):
+    return {
+        'id': recipe.id,
+        'title': recipe.title,
+        'description': recipe.description,
+        'author': recipe.author.username,
+        'servings': recipe.servings,
+        'cook_time_minutes': recipe.cook_time_minutes,
+        'total_calories': float(recipe.total_calories()),
+        'total_proteins': float(recipe.total_proteins()),
+        'total_fats': float(recipe.total_fats()),
+        'total_carbs': float(recipe.total_carbs()),
+        'ingredients': [
+            {
+                'name': ingredient.name,
+                'grams': float(ingredient.grams),
+                'calories': float(ingredient.calories()),
+                'proteins': float(ingredient.proteins()),
+                'fats': float(ingredient.fats()),
+                'carbs': float(ingredient.carbs()),
+            }
+            for ingredient in recipe.ingredients.all()
+        ],
+    }
+
+def _api_ensure_auth(request):
+    if not getattr(request, 'user', None) or not request.user.is_authenticated:
+        return JsonResponse({'detail': 'Authentication credentials were not provided.'}, status=401)
+    return None
+
+
 @login_required
 def recipe_list_view(request):
     recipes = _available_recipes_queryset(request.user)
@@ -166,6 +197,9 @@ def delete_recipe_ingredient_view(request, ingredient_id):
 
 @login_required
 def api_products(request):
+    not_auth = _api_ensure_auth(request)
+    if not_auth is not None:
+        return not_auth
     products = Product.objects.all().order_by('name')
     data = [
         {
@@ -181,33 +215,19 @@ def api_products(request):
     return JsonResponse({'products': data})
 
 
-@login_required
 def api_recipes(request):
+    not_auth = _api_ensure_auth(request)
+    if not_auth is not None:
+        return not_auth
     recipes = _available_recipes_queryset(request.user)
-    data = [
-        {
-            'id': recipe.id,
-            'title': recipe.title,
-            'description': recipe.description,
-            'author': recipe.author.username,
-            'servings': recipe.servings,
-            'cook_time_minutes': recipe.cook_time_minutes,
-            'total_calories': float(recipe.total_calories()),
-            'total_proteins': float(recipe.total_proteins()),
-            'total_fats': float(recipe.total_fats()),
-            'total_carbs': float(recipe.total_carbs()),
-            'ingredients': [
-                {
-                    'name': ingredient.name,
-                    'grams': float(ingredient.grams),
-                    'calories': float(ingredient.calories()),
-                    'proteins': float(ingredient.proteins()),
-                    'fats': float(ingredient.fats()),
-                    'carbs': float(ingredient.carbs()),
-                }
-                for ingredient in recipe.ingredients.all()
-            ],
-        }
-        for recipe in recipes
-    ]
-    return JsonResponse({'recipes': data})
+    return JsonResponse({'recipes': [_serialize_recipe(r) for r in recipes]})
+
+
+def api_recipe_detail(request, recipe_id: int):
+    not_auth = _api_ensure_auth(request)
+    if not_auth is not None:
+        return not_auth
+    recipe = _available_recipes_queryset(request.user).filter(pk=recipe_id).first()
+    if recipe is None:
+        return JsonResponse({'detail': 'Not found.'}, status=404)
+    return JsonResponse(_serialize_recipe(recipe))

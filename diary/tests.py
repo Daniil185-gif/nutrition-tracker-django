@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import FoodEntry, Product
+from recipes.models import Recipe, RecipeIngredient
 
 
 class FoodEntryTests(TestCase):
@@ -50,6 +51,47 @@ class FoodEntryTests(TestCase):
                 product=self.product,
                 grams=60,
                 meal=FoodEntry.MealChoices.SNACK,
+                date='2026-05-04',
+            ).exists(),
+        )
+
+    def test_logged_in_user_can_add_recipe_entry(self):
+        recipe = Recipe.objects.create(
+            title='Омлет',
+            description='Сырный омлет',
+            author=self.user,
+            servings=2,
+            cook_time_minutes=10,
+        )
+        RecipeIngredient.objects.create(
+            recipe=recipe,
+            name='Яйцо',
+            grams=100,
+            calories_per_100g=155,
+            proteins_per_100g=13,
+            fats_per_100g=11,
+            carbs_per_100g=1.1,
+        )
+
+        self.client.login(username='diary_user', password='test-password')
+        response = self.client.post(
+            reverse('add_food_entry'),
+            {
+                'recipe': recipe.id,
+                'servings': '1.00',
+                'meal': FoodEntry.MealChoices.BREAKFAST,
+                'date': '2026-05-04',
+            },
+        )
+
+        self.assertRedirects(response, f"{reverse('diary')}?date=2026-05-04")
+        self.assertTrue(
+            FoodEntry.objects.filter(
+                user=self.user,
+                product__isnull=True,
+                recipe_object_id=recipe.id,
+                servings='1.00',
+                meal=FoodEntry.MealChoices.BREAKFAST,
                 date='2026-05-04',
             ).exists(),
         )

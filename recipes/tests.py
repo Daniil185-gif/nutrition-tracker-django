@@ -155,3 +155,29 @@ class RecipeTests(TestCase):
         self.assertEqual(recipe_data['title'], 'Куриная тарелка')
         self.assertEqual(recipe_data['ingredients'][0]['name'], 'Курица')
         self.assertEqual(recipe_data['total_calories'], 330.0)
+
+    def test_recipes_api_requires_auth(self):
+        response = self.client.get(reverse('api_recipes'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_products_api_requires_auth(self):
+        response = self.client.get(reverse('api_products'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_recipe_detail_api_returns_recipe_for_friend(self):
+        self.client.login(username='recipe_friend', password='test-password')
+        response = self.client.get(reverse('api_recipe_detail', kwargs={'recipe_id': self.recipe.id}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['id'], self.recipe.id)
+        self.assertEqual(response.json()['title'], 'Куриная тарелка')
+
+    def test_recipe_detail_api_returns_404_for_non_friend(self):
+        self.client.login(username='recipe_other', password='test-password')
+        response = self.client.get(reverse('api_recipe_detail', kwargs={'recipe_id': self.recipe.id}))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_recipe_detail_api_requires_auth(self):
+        response = self.client.get(reverse('api_recipe_detail', kwargs={'recipe_id': self.recipe.id}))
+        self.assertEqual(response.status_code, 401)

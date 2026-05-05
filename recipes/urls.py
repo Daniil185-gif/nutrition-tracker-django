@@ -4,6 +4,7 @@ from .views import (
     add_recipe_ingredient_view,
     add_recipe_view,
     api_products,
+    api_recipe_detail,
     api_recipes,
     delete_recipe_ingredient_view,
     delete_recipe_view,
@@ -36,4 +37,5 @@ urlpatterns = [
     ),
     path('api/products/', api_products, name='api_products'),
     path('api/recipes/', api_recipes, name='api_recipes'),
+    path('api/recipes/<int:recipe_id>/', api_recipe_detail, name='api_recipe_detail'),
 ]

@@ -12,7 +12,11 @@
   <div class="card-body">
     <form method="post" novalidate>
       {% csrf_token %}
-      {{ form.non_field_errors }}
+      {% if form.non_field_errors %}
+        <div class="alert alert-warning">
+          {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+        </div>
+      {% endif %}
 
       <div class="row g-3">
         <div class="col-12">
@@ -23,10 +27,23 @@
             Нет нужного продукта? <a href="{% url 'add_product' %}">Добавить</a>
           </div>
         </div>
+        <div class="col-12">
+          <label class="form-label" for="{{ form.recipe.id_for_label }}">Рецепт</label>
+          {{ form.recipe }}
+          {% for e in form.recipe.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          <div class="form-text">
+            Можно выбрать либо продукт, либо рецепт.
+          </div>
+        </div>
         <div class="col-md-4">
           <label class="form-label" for="{{ form.grams.id_for_label }}">Граммы</label>
           {{ form.grams }}
           {% for e in form.grams.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ form.servings.id_for_label }}">Порции (для рецепта)</label>
+          {{ form.servings }}
+          {% for e in form.servings.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
         </div>
         <div class="col-md-4">
           <label class="form-label" for="{{ form.meal.id_for_label }}">Приём пищи</label>
@@ -47,5 +64,53 @@
     </form>
   </div>
 </div>
+
+<script>
+  (function () {
+    const product = document.getElementById("{{ form.product.id_for_label }}");
+    const grams = document.getElementById("{{ form.grams.id_for_label }}");
+    const recipe = document.getElementById("{{ form.recipe.id_for_label }}");
+    const servings = document.getElementById("{{ form.servings.id_for_label }}");
+
+    function setDisabled(el, disabled) {
+      if (!el) return;
+      el.disabled = disabled;
+      if (disabled) {
+        el.classList.add("opacity-50");
+      } else {
+        el.classList.remove("opacity-50");
+      }
+    }
+
+    function update() {
+      const hasProduct = product && product.value;
+      const hasRecipe = recipe && recipe.value;
+
+      // If user picked recipe -> disable product + grams
+      if (hasRecipe) {
+        setDisabled(product, true);
+        setDisabled(grams, true);
+        if (grams) grams.value = "";
+      } else {
+        setDisabled(product, false);
+        setDisabled(grams, false);
+      }
+
+      // If user picked product -> disable recipe + servings
+      if (hasProduct) {
+        setDisabled(recipe, true);
+        setDisabled(servings, true);
+        if (servings) servings.value = "";
+      } else {
+        setDisabled(recipe, false);
+        setDisabled(servings, false);
+      }
+    }
+
+    if (product) product.addEventListener("change", update);
+    if (recipe) recipe.addEventListener("change", update);
+    update();
+  })();
+</script>
 {% endblock %}
 
