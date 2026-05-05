@@ -10,7 +10,7 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'created_at')
+    list_display = ('title', 'author', 'servings', 'cook_time_minutes', 'created_at')
     search_fields = ('title', 'author__username')
     list_filter = ('created_at',)
     inlines = (RecipeIngredientInline,)
@@ -18,5 +18,5 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(RecipeIngredient)
 class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'product', 'grams')
-    search_fields = ('recipe__title', 'product__name')
+    list_display = ('recipe', 'name', 'grams', 'calories_per_100g')
+    search_fields = ('recipe__title', 'name')

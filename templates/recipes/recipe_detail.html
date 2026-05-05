@@ -9,17 +9,47 @@
         <p class="text-muted mb-0">Автор: {{ recipe.author.username }}</p>
     </div>
     {% if request.user == recipe.author %}
-        <a class="btn btn-dark" href="{% url 'add_recipe_ingredient' recipe.id %}">Добавить ингредиент</a>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-dark" href="{% url 'edit_recipe' recipe.id %}">Редактировать</a>
+            <a class="btn btn-dark" href="{% url 'add_recipe_ingredient' recipe.id %}">Добавить ингредиент</a>
+            <a class="btn btn-outline-danger" href="{% url 'delete_recipe' recipe.id %}">Удалить рецепт</a>
+        </div>
     {% endif %}
 </div>
 
-{% if recipe.description %}
-    <div class="card shadow-sm mb-3">
-        <div class="card-body">
-            <p class="mb-0">{{ recipe.description }}</p>
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                {% if recipe.photo %}
+                    <img src="{{ recipe.photo.url }}" class="img-fluid rounded mb-3" alt="{{ recipe.title }}">
+                {% endif %}
+                {% if recipe.description %}
+                    <p class="mb-0">{{ recipe.description }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">Описание не добавлено.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
-{% endif %}
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Характеристики рецепта</h2>
+                <p class="mb-2">Порций: <strong>{{ recipe.servings }}</strong></p>
+                <p class="mb-2">Время приготовления:
+                    <strong>{{ recipe.cook_time_minutes|default:"не указано" }}</strong>
+                </p>
+                <p class="mb-2">Вес: <strong>{{ recipe.total_weight|floatformat:0 }}</strong> г</p>
+                <p class="mb-2">Калории: <strong>{{ recipe.total_calories|floatformat:0 }}</strong> ккал</p>
+                <p class="mb-2">Белки: <strong>{{ recipe.total_proteins|floatformat:1 }}</strong> г</p>
+                <p class="mb-2">Жиры: <strong>{{ recipe.total_fats|floatformat:1 }}</strong> г</p>
+                <p class="mb-2">Углеводы: <strong>{{ recipe.total_carbs|floatformat:1 }}</strong> г</p>
+                <p class="mb-0">Ккал на порцию: <strong>{{ recipe.calories_per_serving|floatformat:0 }}</strong></p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="card shadow-sm">
     <div class="card-body">
@@ -29,23 +59,40 @@
                 <table class="table align-middle">
                     <thead>
                         <tr>
-                            <th>Продукт</th>
+                            <th>Ингредиент</th>
                             <th>Граммы</th>
                             <th>Калории</th>
+                            <th>Белки</th>
+                            <th>Жиры</th>
+                            <th>Углеводы</th>
+                            {% if request.user == recipe.author %}
+                                <th></th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for ingredient in recipe.ingredients.all %}
                             <tr>
-                                <td>{{ ingredient.product.name }}</td>
+                                <td>{{ ingredient.name }}</td>
                                 <td>{{ ingredient.grams }} г</td>
                                 <td>{{ ingredient.calories|floatformat:0 }} ккал</td>
+                                <td>{{ ingredient.proteins|floatformat:1 }} г</td>
+                                <td>{{ ingredient.fats|floatformat:1 }} г</td>
+                                <td>{{ ingredient.carbs|floatformat:1 }} г</td>
+                                {% if request.user == recipe.author %}
+                                    <td class="text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a class="btn btn-sm btn-outline-dark" href="{% url 'edit_recipe_ingredient' ingredient.id %}">Изменить</a>
+                                            <a class="btn btn-sm btn-outline-danger" href="{% url 'delete_recipe_ingredient' ingredient.id %}">Удалить</a>
+                                        </div>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p class="fw-semibold mb-0">Всего: {{ recipe.total_calories|floatformat:0 }} ккал</p>
+            <p class="fw-semibold mb-0">Всего: {{ recipe.total_calories|floatformat:0 }} ккал / Б {{ recipe.total_proteins|floatformat:1 }} / Ж {{ recipe.total_fats|floatformat:1 }} / У {{ recipe.total_carbs|floatformat:1 }}</p>
         {% else %}
             <p class="text-muted mb-0">Ингредиенты пока не добавлены.</p>
         {% endif %}
