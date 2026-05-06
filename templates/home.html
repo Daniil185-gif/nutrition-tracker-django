@@ -3,10 +3,75 @@
 {% block title %}Главная{% endblock %}
 
 {% block content %}
-<h1>Nutrition Tracker</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-1">Лента рецептов</h1>
+    {% if request.user.is_authenticated %}
+      <p class="text-muted mb-0">Всего в ленте: {{ feed_total }}</p>
+    {% endif %}
+  </div>
+  {% if request.user.is_authenticated %}
+    <a class="btn btn-dark" href="{% url 'add_recipe' %}">Добавить рецепт</a>
+  {% endif %}
+</div>
+
 {% if request.user.is_authenticated %}
-<p>Сейчас в системе: {{ request.user.username }}</p>
+  {% if feed_recipes %}
+    <div class="row g-3">
+      {% for recipe in feed_recipes %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card h-100 shadow-sm">
+            {% if recipe.photo %}
+              <img src="{{ recipe.photo.url }}" class="card-img-top" alt="{{ recipe.title }}">
+            {% endif %}
+            <div class="card-body">
+              <h2 class="h5">{{ recipe.title }}</h2>
+              <p class="text-muted mb-2">Автор: {{ recipe.author.username }}</p>
+              <p class="mb-3">{{ recipe.description|default:"Описание не добавлено."|truncatewords:20 }}</p>
+              <p class="mb-1">Калории: <strong>{{ recipe.total_calories|floatformat:0 }}</strong> ккал</p>
+              <p class="mb-1">Белки: <strong>{{ recipe.total_proteins|floatformat:1 }}</strong> г</p>
+              <p class="mb-1">Жиры: <strong>{{ recipe.total_fats|floatformat:1 }}</strong> г</p>
+              <p class="mb-3">Углеводы: <strong>{{ recipe.total_carbs|floatformat:1 }}</strong> г</p>
+              <a class="btn btn-outline-dark btn-sm" href="{% url 'recipe_detail' recipe.id %}">Открыть</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="mt-4" aria-label="Пагинация ленты рецептов">
+        <ul class="pagination justify-content-center mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Назад</span></li>
+          {% endif %}
+
+          <li class="page-item disabled">
+            <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+          </li>
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Вперёд</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-info">
+      В ленте пока нет рецептов. Добавь друзей или создай свой первый рецепт.
+    </div>
+  {% endif %}
 {% else %}
-<p>Пользователь не авторизован.</p>
+  <div class="alert alert-secondary">
+    Войди в аккаунт, чтобы видеть ленту рецептов друзей.
+  </div>
 {% endif %}
 {% endblock %}

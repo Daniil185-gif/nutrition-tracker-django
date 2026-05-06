@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='foodentry',
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(('product__isnull', False), ('recipe_content_type__isnull', True), ('recipe_object_id__isnull', True))
                     | models.Q(('product__isnull', True), ('recipe_content_type__isnull', False), ('recipe_object_id__isnull', False))
                 ),
@@ -67,14 +67,14 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='foodentry',
             constraint=models.CheckConstraint(
-                check=models.Q(('product__isnull', True)) | models.Q(('grams__isnull', False)),
+                condition=models.Q(('product__isnull', True)) | models.Q(('grams__isnull', False)),
                 name='foodentry_grams_required_for_product',
             ),
         ),
         migrations.AddConstraint(
             model_name='foodentry',
             constraint=models.CheckConstraint(
-                check=models.Q(('recipe_content_type__isnull', True)) | models.Q(('servings__isnull', False)),
+                condition=models.Q(('recipe_content_type__isnull', True)) | models.Q(('servings__isnull', False)),
                 name='foodentry_servings_required_for_recipe',
             ),
         ),

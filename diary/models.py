@@ -73,18 +73,18 @@ class FoodEntry(models.Model):
         constraints = [
             models.CheckConstraint(
                 name='foodentry_product_xor_recipe',
-                check=(
+                condition=(
                     (Q(product__isnull=False) & Q(recipe_content_type__isnull=True) & Q(recipe_object_id__isnull=True))
                     | (Q(product__isnull=True) & Q(recipe_content_type__isnull=False) & Q(recipe_object_id__isnull=False))
                 ),
             ),
             models.CheckConstraint(
                 name='foodentry_grams_required_for_product',
-                check=Q(product__isnull=True) | Q(grams__isnull=False),
+                condition=Q(product__isnull=True) | Q(grams__isnull=False),
             ),
             models.CheckConstraint(
                 name='foodentry_servings_required_for_recipe',
-                check=Q(recipe_content_type__isnull=True) | Q(servings__isnull=False),
+                condition=Q(recipe_content_type__isnull=True) | Q(servings__isnull=False),
             ),
         ]
 

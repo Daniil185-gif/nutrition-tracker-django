@@ -195,7 +195,6 @@ def delete_recipe_ingredient_view(request, ingredient_id):
     )
 
 
-@login_required
 def api_products(request):
     not_auth = _api_ensure_auth(request)
     if not_auth is not None:

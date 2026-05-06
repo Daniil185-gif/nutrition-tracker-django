@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponseForbidden
+from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 
 from .models import CustomUser, FriendRequest
@@ -10,7 +11,23 @@ from .forms import LoginForm, ProfileUpdateForm, RegisterForm, UserUpdateForm
 
 
 def home_view(request):
-    return render(request, 'home.html')
+    context = {}
+    if request.user.is_authenticated:
+        from recipes.models import Recipe  # noqa: PLC0415
+
+        friends_ids = request.user.friends.values_list('id', flat=True)
+        feed_qs = (
+            Recipe.objects.select_related('author')
+            .prefetch_related('ingredients')
+            .filter(Q(author=request.user) | Q(author_id__in=friends_ids))
+            .order_by('-created_at')
+        )
+        paginator = Paginator(feed_qs, 6)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        context['page_obj'] = page_obj
+        context['feed_recipes'] = page_obj.object_list
+        context['feed_total'] = feed_qs.count()
+    return render(request, 'home.html', context)
 
 
 def register_view(request):
