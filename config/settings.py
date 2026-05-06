@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 try:
     import dj_database_url
@@ -7,7 +8,7 @@ except ImportError:  # optional for local SQLite-only setup
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-secret-key-change-me')
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = 'False'
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()]
 ALLOWED_HOSTS.append('https-github-com-paneledmaxim.onrender.com')
 INSTALLED_APPS = [
@@ -60,14 +61,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+import os
+import dj_database_url
+
 DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL and dj_database_url is not None:
+
+if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True,
-        ),
+            ssl_require=True,  # Для Render обязательно
+        )
     }
 else:
     DATABASES = {
@@ -149,3 +154,20 @@ LOGGING = {
         },
     },
 }
+
+
+
+if 'migrate' in sys.argv or 'runserver' in sys.argv:
+    # Автоматически создаем суперпользователя, если его нет
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser(
+                username='admin',
+                email='admin@example.com',
+                password='admin123'
+            )
+            print(" Superuser 'admin' created with password 'AdminPass123!'")
+    except Exception as e:
+        print(f" Could not create superuser: {e}")
